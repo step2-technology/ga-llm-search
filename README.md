@@ -1,3 +1,7 @@
+![Python](https://img.shields.io/badge/python-3.8+-blue)
+![License](https://img.shields.io/github/license/step2-technology/ga-llm)
+![Stars](https://img.shields.io/github/stars/step2-technology/ga-llm?style=social)
+
 # GA-LLM: Hybrid Optimization Framework for Structured Tasks
 
 > Genetic Algorithm + LLM + Task-Aware Encoding
