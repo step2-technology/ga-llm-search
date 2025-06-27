@@ -77,20 +77,25 @@ class SearchQueryPrompts:
 
         Evaluate the quality of the search result based on:
 
-        1. **Relevance** – Directly related to the user's query
-        2. **Depth** – Provides insight, context, or meaningful data
-        3. **Specificity** – Avoids generic/ambiguous content
-        4. **Authority** – Comes from a credible or expert source
-        5. **Diversity** – Adds a distinct perspective, not repetitive
+        1. **Relevance** – Directly related to the user's query  
+        2. **Depth** – Provides insight, context, or meaningful data  
+        3. **Specificity** – Avoids generic/ambiguous content  
+        4. **Authority** – Comes from a credible or expert source  
+        5. **Diversity** – Adds a distinct perspective, not repetitive  
 
         ## Scoring Guide:
 
-        - 10: Excellent across all 5 criteria
-        - 8: Strong on most criteria
-        - 6: Moderate relevance or depth
-        - 4: Partially related, shallow or vague
-        - 2: Barely related or poor quality
-        - 0: Irrelevant, misleading, or NO SEARCH RESULTS were returned
+        - 10: Excellent across all 5 criteria  
+        - 8: Strong on most criteria  
+        - 6: Moderate relevance or depth  
+        - 4: Partially related, shallow or vague  
+        - 2: Barely related or poor quality  
+        - 0: Irrelevant, misleading, or NO SEARCH RESULTS were returned  
+
+        ## Evaluation Target:
+        Below is the search query, generated search expression, and the top search results summary.
+
+        {{solution_text}}
 
         ## Important:
         If there are **no search results**, you MUST return a score of 0.

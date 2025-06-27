@@ -48,7 +48,9 @@ def main(user_query_override=None):
         task_prompt=build_initial_prompt(user_query_final),
         eval_prompt=SearchQueryPrompts.get("search_result_evaluation"),
         llm_callback=llm_callback,
-        logger=search_logger
+        logger=search_logger, 
+        checkpoint_path="checkpoint.pkl",            # ✅ 保存路径
+        resume_from_checkpoint=False                 # ✅ 是否开启断点续跑
     )
     best_gene, best_score = engine.evolve()
 
