@@ -118,10 +118,14 @@ class HybridEvolutionEngine:
                 p1 = self._select(scored)
                 p2 = self._select(scored)
                 self.logger.debug("选择父代交叉")
+                
+                
 
                 if self.config.use_llm_for_crossover:
+                    self.logger.warning("使用LLM交叉：{self.config.use_llm_for_crossover}")
                     child = self._llm_crossover(p1, p2)
                 else:
+                    self.logger.warning("不使用LLM交叉：{self.config.use_llm_for_crossover}")
                     child = p1.crossover(p2)
 
                 if random.random() < self.config.mutation_rate:
