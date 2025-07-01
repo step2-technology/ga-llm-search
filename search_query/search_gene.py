@@ -7,6 +7,8 @@ from typing import Dict, List, Optional
 from ga_llm.base_gene import BaseGene
 from search_query.search_api import search
 from search_query import search_logger
+from search_query.dimension_registry import register_dimension, mark_used
+from info_store.info_item import InfoItem
 
 
 class SearchQueryGene(BaseGene):
@@ -19,11 +21,18 @@ class SearchQueryGene(BaseGene):
         self.query_string: Optional[str] = None
 
     def parse_from_text(self, text: str) -> None:
-        """Parses LLM output JSON and constructs a complete gene including search."""
+        """
+        Parses LLM output JSON and constructs a complete gene including search query and results.
+
+        Args:
+            text (str): JSON string from LLM containing dimensions and keywords.
+        """
         try:
             data = json.loads(text)
             self.user_query = data["user_query"]
             self.dimensions = data["dimensions"]
+            for dim in self.dimensions:
+                register_dimension(dim)
             raw_keywords = data["keywords"]
             self.keywords = {}
 
@@ -43,7 +52,9 @@ class SearchQueryGene(BaseGene):
             raise ValueError(f"Invalid gene format or search failed: {e}")
 
     def rebuild_from_keywords(self):
-        """Constructs a weighted search query from keywords and performs Google search."""
+        """
+        Constructs a weighted search query from selected keywords and executes the search.
+        """
         try:
             keyword_list = list(self.keywords.values())
             random.shuffle(keyword_list)
@@ -67,7 +78,12 @@ class SearchQueryGene(BaseGene):
             self.search_results = []
 
     def to_text(self) -> str:
-        """Convert gene contents into evaluation prompt."""
+        """
+        Converts the gene contents into a text prompt used for LLM evaluation.
+
+        Returns:
+            str: Prompt text with user query, query string, and top search results.
+        """
         if not self.search_results:
             return f"## User Query:\n{self.user_query}\n\n## Search Query:\n{self.query_string}\n\n## Search Results: null\n"
 
@@ -83,7 +99,15 @@ class SearchQueryGene(BaseGene):
         )
 
     def crossover(self, other: 'SearchQueryGene') -> 'SearchQueryGene':
-        """Create child by randomly combining keyword choices from parents."""
+        """
+        Creates a child gene by combining keywords from two parent genes.
+
+        Args:
+            other (SearchQueryGene): The second parent gene.
+
+        Returns:
+            SearchQueryGene: The offspring gene.
+        """
         child = SearchQueryGene(llm_engine=self.llm_engine)
         child.user_query = self.user_query
         child.dimensions = copy.deepcopy(self.dimensions)
@@ -101,7 +125,12 @@ class SearchQueryGene(BaseGene):
         return child
 
     def mutate(self) -> 'SearchQueryGene':
-        """Mutate by changing one keyword via LLM, then refresh search."""
+        """
+        Mutates one of the dimensions' keywords using the LLM.
+
+        Returns:
+            SearchQueryGene: A new mutated gene instance.
+        """
         mutated = copy.deepcopy(self)
         if not mutated.dimensions:
             return mutated
@@ -123,6 +152,16 @@ class SearchQueryGene(BaseGene):
         return mutated
 
     def _mutation_prompt(self, dimension: str, current_keyword: str) -> str:
+        """
+        Builds a prompt for mutating a keyword in a given dimension.
+
+        Args:
+            dimension (str): The semantic dimension.
+            current_keyword (str): The current keyword to be replaced.
+
+        Returns:
+            str: LLM prompt text.
+        """
         return f"""
         You are an Expert Information Retrieval Strategist.
 
@@ -151,3 +190,25 @@ class SearchQueryGene(BaseGene):
         - Do NOT include any explanation, markdown, or commentary
         - Ensure the JSON can be parsed directly by Python's json.loads()
         """.strip()
+
+    def to_info_items(self, score: float) -> List[InfoItem]:
+        items = []
+        dimension = self.dimensions[0] if self.dimensions else "Uncategorized"
+        for i, res in enumerate(self.search_results or []):
+            if not res.get("title") or not res.get("link"):
+                continue
+            item = InfoItem(
+                dimension=dimension,
+                title=res.get("title", ""),
+                snippet=res.get("snippet", ""),
+                url=res.get("link", ""),
+                query=self.query_string or "",
+                user_query=self.user_query,
+                keywords=self.keywords,
+                score=score,
+                metadata={
+                    "rank_in_gene": i + 1
+                }
+            )
+            items.append(item)
+        return items

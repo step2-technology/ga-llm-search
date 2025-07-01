@@ -17,10 +17,17 @@ from search_query.config import (
     llm_temperature,
     llm_timeout
 )
+from search_query.evaluator_with_info_store import EvaluatorWithInfoStore
+# 导入 InformationStore 和导出函数
+from info_store.information_store import InformationStore
+from info_store.export_logger import export_info_items
+from info_store.filter_llm_selector import filter_info_items_via_llm
+from info_store.crawler import crawl_all
+from info_store.extractor import extract_all
+from info_store.info_pack_builder import build_info_pack, save_info_pack
 
 # Logger
 search_logger = setup_logger("search_query_run")
-
 
 def build_initial_prompt(user_query: str) -> str:
     """Builds prompt to initialize gene generation, using provided user_query."""
@@ -36,17 +43,23 @@ def build_initial_prompt(user_query: str) -> str:
 
 def main(user_query_override=None):
     user_query_final = user_query_override
+    InformationStore.reset()
     search_logger.info(f"🔍 Starting GA-LLM optimization for: {user_query_final}")
 
-    # Config + evaluator
+    # 1. 构造 GA 配置和评估器
     evo_cfg = EvolutionConfig(**evolution_config)
+    evaluator = EvaluatorWithInfoStore(
+        llm_fn=llm_callback,
+        score_threshold=7.0
+    )
 
-    # Run GA with correct user query prompt
+    # 2. 启动遗传算法搜索
     engine = HybridEvolutionEngine(
         config=evo_cfg,
         gene_cls=SearchQueryGene,
         task_prompt=build_initial_prompt(user_query_final),
         eval_prompt=SearchQueryPrompts.get("search_result_evaluation"),
+        evaluator=evaluator,
         llm_callback=llm_callback,
         logger=search_logger, 
         checkpoint_path="checkpoint.pkl",            # ✅ 保存路径
@@ -54,12 +67,42 @@ def main(user_query_override=None):
     )
     best_gene, best_score = engine.evolve()
 
+    # 3. 打印最佳基因信息
     print("=" * 60)
     print(f"⭐ Best query found (Score: {best_score:.2f}/10)")
     print("🔍 Optimized Search Query:\n", best_gene.to_text())
     print("\n🧬 Keyword Mapping:\n", json.dumps(best_gene.keywords, indent=2))
     print("=" * 60)
 
+    # 4. 高分 InfoItem 二次筛选
+    print(f"📊 Running second-stage filtering via LLM...")
+    selected_ids = filter_info_items_via_llm(user_query_final, llm_callback, 20)
+    print(f"✅ Selected {len(selected_ids)} items after LLM filtering: {selected_ids}")
+
+    InformationStore.filter_by_selection(selected_ids)
+    final_items = InformationStore.get_all()
+    print(f"🧹 InfoStore now contains {len(final_items)} items after filtering:\n")
+    for i, item in enumerate(final_items, 1):
+        print(f"{i}. [{item.score:.2f}] {item.title}\n   URL: {item.url}\n")
+
+    # 5. 网页爬取
+    print(f"🌐 Crawling full content for {len(final_items)} items...")
+    crawl_all(final_items)
+    print("✅ Crawling complete.\n")
+
+    # 6. 结构化抽取
+    print(f"📐 Extracting structured data via LLM...")
+    extract_all(final_items, llm_callback)  # 请确保你实现了这个函数
+    print("✅ Structured extraction complete.\n")
+
+    # 7. 导出记录
+    export_info_items(final_items)
+    print(f"📦 Exported {len(final_items)} InfoItems to info_store/log directory.")
+    
+    # 8. 构建 InfoPack（摘要 + 知识图谱）
+    print(f"📦 Building final InfoPack...")
+    info_pack = build_info_pack(user_query_final)
+    save_info_pack(info_pack)
 
 def llm_callback(prompt: str) -> str:
     return llm_call(
@@ -68,7 +111,6 @@ def llm_callback(prompt: str) -> str:
         temperature=llm_temperature,
         timeout=llm_timeout
     )
-
 
 if __name__ == "__main__":
     import sys

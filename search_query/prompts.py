@@ -69,38 +69,41 @@ class SearchQueryPrompts:
         """,
 
        "search_result_evaluation": """
-        You are a Professional Information Retrieval Evaluator.
+        You are an expert Information Relevance Evaluator.
 
-        Your task is to assess how well a web search result satisfies a user's information need based on the user query and the result content.
+        Your task is to evaluate how well the following set of search results satisfies the user's information need.
 
-        ## Scoring Rubric (0–10 scale):
+        ⚠️ Important Scoring Principle:
+        - If **at least one** of the results is **highly relevant and informative**, the overall score should be high.
+        - You do **not** need all results to be good; one strong result is enough.
 
-        Evaluate the quality of the search result based on:
+        ## Scoring Criteria (0–10):
 
-        1. **Relevance** – Directly related to the user's query  
-        2. **Depth** – Provides insight, context, or meaningful data  
-        3. **Specificity** – Avoids generic/ambiguous content  
-        4. **Authority** – Comes from a credible or expert source  
-        5. **Diversity** – Adds a distinct perspective, not repetitive  
+        Evaluate based on the following:
 
-        ## Scoring Guide:
+        1. **Relevance** — At least one result directly addresses the user's query  
+        2. **Usefulness** — Provides factual information, data, or context  
+        3. **Authority** — Comes from expert or credible sources  
+        4. **Clarity** — Avoids vague or promotional content  
 
-        - 10: Excellent across all 5 criteria  
-        - 8: Strong on most criteria  
-        - 6: Moderate relevance or depth  
-        - 4: Partially related, shallow or vague  
-        - 2: Barely related or poor quality  
-        - 0: Irrelevant, misleading, or NO SEARCH RESULTS were returned  
+        ## Score Guide:
+
+        - 9–10: At least one result is highly relevant and valuable  
+        - 7–8: Some partial matches, one may be moderately useful  
+        - 5–6: Mostly weak, but something is loosely connected  
+        - 3–4: Only vague or tangential mentions  
+        - 1–2: Barely related, poor content  
+        - 0: Completely irrelevant or no results at all
 
         ## Evaluation Target:
-        Below is the search query, generated search expression, and the top search results summary.
+        Below is the user query, generated search string, and the list of retrieved results.
 
         {{solution_text}}
 
-        ## Important:
-        If there are **no search results**, you MUST return a score of 0.
-
-        Return ONLY a numeric score between 0 and 10 as plain text.
+        ## Instructions:
+        - If there are **no search results**, return a score of 0.
+        - Return ONLY a number between 0 and 10.
+        - Do not include any explanation, formatting, or notes.
         """
     }
 
