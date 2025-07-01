@@ -11,10 +11,10 @@ search_max_results = 5
 # === Evolution Strategy ===
 evolution_config = {
     "population_size": 5,
-    "max_generations": 3,
+    "max_generations": 5,
     "elite_ratio": 0.3,
     "mutation_rate": 0.3,
-    "early_stopping_rounds": 2,
+    "early_stopping_rounds": 5,
     "use_llm_for_crossover": False
 }
 

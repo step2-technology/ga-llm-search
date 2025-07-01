@@ -101,8 +101,13 @@ def main(user_query_override=None):
     
     # 8. 构建 InfoPack（摘要 + 知识图谱）
     print(f"📦 Building final InfoPack...")
-    info_pack = build_info_pack(user_query_final)
-    save_info_pack(info_pack)
+    try:
+        info_pack = build_info_pack(user_query_final)
+        save_info_pack(info_pack)
+    except ValueError as e:
+        print(f"[ERROR] {str(e)}")
+        print("No InfoItems were found, ending process.")
+        return  # 结束任务
 
 def llm_callback(prompt: str) -> str:
     return llm_call(
