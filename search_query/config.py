@@ -11,7 +11,7 @@ search_max_results = 5
 # === Evolution Strategy ===
 evolution_config = {
     "population_size": 5,
-    "max_generations": 4,
+    "max_generations": 3,
     "elite_ratio": 0.3,
     "mutation_rate": 0.3,
     "early_stopping_rounds": 2,
@@ -21,7 +21,7 @@ evolution_config = {
 
 # === LLM Parameters ===
 llm_model = "qwen-max"
-llm_temperature = 0.7
+llm_temperature = 0.3
 llm_timeout = 120
 
 
